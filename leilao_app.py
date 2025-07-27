@@ -23,7 +23,7 @@ st.markdown("Preencha os dados abaixo para calcular os encargos sobre o item lei
 nome_item = st.text_input("📝 Nome do Item").strip().lower()
 valor = st.number_input("💰 Valor Arrematado (R$)", min_value=0.0, step=100.0)
 aliquota_icms = st.number_input("📄 Alíquota ICMS (%)", min_value=0.0, max_value=100.0, value=18.0)
-taxa_arm = st.selectbox("🏬 Taxa de Armazenagem (%)", [5.0, 7.5])
+taxa_arm = st.number_input("🏬 Taxa de Armazenagem (%)", min_value=0.0, max_value=100.0, value=5.0, step=0.1)
 
 # Função para ícone
 def obter_icone(nome):
