@@ -35,7 +35,7 @@ def obter_icone(nome):
 # Cálculo
 if st.button("🔍 Calcular Valor Total"):
     if valor > 0 and aliquota_icms > 0 and taxa_arm > 0:
-        icms = valor * aliquota_icms / (100 - aliquota_icms)
+        icms = valor * aliquota_icms / 100
         taxa_armazenagem = valor * taxa_arm / 100
         total = valor + icms + taxa_armazenagem
         icone = obter_icone(nome_item)
