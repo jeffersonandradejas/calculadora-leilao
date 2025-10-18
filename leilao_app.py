@@ -23,52 +23,65 @@ if res_marcas.status_code == 200:
     marcas = res_marcas.json()
     marca_opcoes = {m["name"]: m["code"] for m in marcas}
     marca_nome = st.selectbox("Marca", list(marca_opcoes.keys()))
-    marca_id = marca_opcoes[marca_nome]
+    marca_id = marca_opcoes.get(marca_nome)
 else:
     st.error("❌ Não foi possível carregar as marcas.")
     st.stop()
 
 # Modelos
-modelos = []
-modelo_opcoes = {}
 modelo_nome = ""
 modelo_id = ""
+modelo_opcoes = {}
 
-res_modelos = requests.get(f"https://fipe.parallelum.com.br/api/v2/cars/brands/{marca_id}/models")
-if res_modelos.status_code == 200:
-    data_modelos = res_modelos.json()
-    if "models" in data_modelos and data_modelos["models"]:
-        modelos = data_modelos["models"]
-        modelo_opcoes = {m["name"]: m["code"] for m in modelos}
-        modelo_nome = st.selectbox("Modelo", list(modelo_opcoes.keys()))
-        modelo_id = modelo_opcoes[modelo_nome]
+if marca_id:
+    res_modelos = requests.get(f"https://fipe.parallelum.com.br/api/v2/cars/brands/{marca_id}/models")
+    if res_modelos.status_code == 200:
+        data_modelos = res_modelos.json()
+        if "models" in data_modelos and data_modelos["models"]:
+            modelos = data_modelos["models"]
+            modelo_opcoes = {m["name"]: m["code"] for m in modelos}
+            modelo_nome = st.selectbox("Modelo", list(modelo_opcoes.keys()))
+            modelo_id = modelo_opcoes.get(modelo_nome)
+        else:
+            st.warning("⚠️ Nenhum modelo disponível para esta marca.")
+            st.stop()
     else:
-        st.warning("⚠️ Nenhum modelo disponível para esta marca.")
+        st.error("❌ Erro ao acessar a API de modelos.")
         st.stop()
 else:
-    st.error("❌ Erro ao acessar a API de modelos.")
+    st.warning("⚠️ Selecione uma marca válida antes de continuar.")
     st.stop()
 
 # Anos
-res_anos = requests.get(f"https://fipe.parallelum.com.br/api/v2/cars/brands/{marca_id}/models/{modelo_id}/years")
-if res_anos.status_code == 200:
-    anos = res_anos.json()
-    ano_opcoes = {a["name"]: a["code"] for a in anos}
-    ano_nome = st.selectbox("Ano", list(ano_opcoes.keys()))
-    ano_id = ano_opcoes[ano_nome]
-else:
-    st.error("❌ Não foi possível carregar os anos.")
-    st.stop()
+ano_nome = ""
+ano_id = ""
+ano_opcoes = {}
+
+if modelo_id:
+    res_anos = requests.get(f"https://fipe.parallelum.com.br/api/v2/cars/brands/{marca_id}/models/{modelo_id}/years")
+    if res_anos.status_code == 200:
+        anos = res_anos.json()
+        if anos:
+            ano_opcoes = {a["name"]: a["code"] for a in anos}
+            ano_nome = st.selectbox("Ano", list(ano_opcoes.keys()))
+            ano_id = ano_opcoes.get(ano_nome)
+        else:
+            st.warning("⚠️ Nenhum ano disponível para este modelo.")
+            st.stop()
+    else:
+        st.error("❌ Não foi possível carregar os anos.")
+        st.stop()
 
 # Valor Fipe
 valor_fipe = 0.0
-res_fipe = requests.get(f"https://fipe.parallelum.com.br/api/v2/cars/brands/{marca_id}/models/{modelo_id}/years/{ano_id}")
-if res_fipe.status_code == 200 and "price" in res_fipe.json():
-    fipe_data = res_fipe.json()
-    valor_fipe = float(fipe_data["price"].replace("R$ ", "").replace(".", "").replace(",", "."))
-    st.success(f"📊 Valor Fipe: R$ {valor_fipe:.2f}")
-else:
-    st.warning("⚠️ Não foi possível obter o valor Fipe.")
+if ano_id:
+    res_fipe = requests.get(f"https://fipe.parallelum.com.br/api/v2/cars/brands/{marca_id}/models/{modelo_id}/years/{ano_id}")
+    if res_fipe.status_code == 200 and "price" in res_fipe.json():
+        fipe_data = res_fipe.json()
+        valor_fipe = float(fipe_data["price"].replace("R$ ", "").replace(".", "").replace(",", "."))
+        st.success(f"📊 Valor Fipe: R$ {valor_fipe:.2f}")
+    else:
+        st.warning("⚠️ Não foi possível obter o valor Fipe.")
 
 # Função para entrada de taxa
 def entrada_taxa(nome_taxa, chave):
