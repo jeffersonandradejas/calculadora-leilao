@@ -2,46 +2,38 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# Configuração da página
 st.set_page_config(page_title="Calculadora de Leilão", layout="centered")
 
-# Função para formatar moeda no padrão brasileiro
+# ✅ Função corrigida para formato brasileiro
 def formatar_reais(valor):
-    partes = f"{valor:,.2f}".split(".")
-    milhar = partes[0].replace(",", ".")
-    centavos = partes[1]
-    return f"R$ {milhar},{centavos}"
+    valor_str = f"{valor:,.2f}"
+    valor_str = valor_str.replace(",", "X").replace(".", ",").replace("X", ".")
+    return f"R$ {valor_str}"
 
-# Ícones por tipo de item
 ICONES = {
     "computador": "🖥️", "notebook": "💻", "carro": "🚗", "moto": "🏍️",
     "bicicleta": "🚲", "impressora": "🖨️", "servidor": "🗄️", "monitor": "🖥️",
     "celular": "📱", "caminhão": "🚚", "outro": "📦"
 }
 
-# Histórico de cálculos
 if "historico" not in st.session_state:
     st.session_state["historico"] = []
 
-# Título
 st.markdown("<h1 style='text-align:center;color:#2E8B57;'>🛒 Calculadora de Leilão</h1>", unsafe_allow_html=True)
 st.markdown("Preencha os dados abaixo para calcular os encargos e projeção de revenda:")
 
-# Entradas principais
 col1, col2 = st.columns(2)
 with col1:
     nome_item = st.text_input("📝 Nome do Item").strip().lower()
 with col2:
     valor = st.number_input("💰 Valor Arrematado (R$)", min_value=0.0, step=100.0)
 
-# Campos de modelo e ano
 col3, col4 = st.columns(2)
 with col3:
     modelo = st.text_input("🚗 Modelo do Veículo")
 with col4:
     ano = st.text_input("📅 Ano")
 
-# Função para entrada de taxa com radio buttons
 def entrada_taxa(nome_taxa, chave):
     st.markdown(f"**{nome_taxa}**")
     modo = st.radio("Escolha o tipo", ["Percentual (%)", "Valor Fixo (R$)"], horizontal=True, key=f"modo_{chave}")
@@ -52,17 +44,14 @@ def entrada_taxa(nome_taxa, chave):
         valor_fixo = st.number_input(f"{nome_taxa} (R$)", min_value=0.0, value=0.0, step=10.0, key=f"{chave}_fixo")
         return valor_fixo
 
-# Entradas das taxas
 st.markdown("### 📌 Taxas Adicionais")
 valor_taxa1 = entrada_taxa("Taxa 1", "taxa1")
 valor_taxa2 = entrada_taxa("Taxa 2", "taxa2")
 valor_taxa3 = entrada_taxa("Taxa 3", "taxa3")
 
-# Entrada de valor Fipe
 st.markdown("### 🚗 Valor de Mercado (Tabela Fipe)")
 valor_fipe = st.number_input("Valor Fipe (R$)", min_value=0.0, step=100.0)
 
-# Entrada de lucro desejado
 st.markdown("### 📈 Lucro Desejado")
 modo_lucro = st.radio("Tipo de Lucro", ["Percentual (%)", "Valor Fixo (R$)"], horizontal=True)
 if modo_lucro == "Percentual (%)":
@@ -72,14 +61,12 @@ else:
     lucro_fixo = st.number_input("Lucro (R$)", min_value=0.0, value=5000.0)
     preco_revenda = valor + valor_taxa1 + valor_taxa2 + valor_taxa3 + lucro_fixo
 
-# Função para ícone
 def obter_icone(nome):
     for chave in ICONES:
         if chave in nome:
             return ICONES[chave]
     return ICONES["outro"]
 
-# Cálculo
 if st.button("🔍 Calcular Valor Total e Projeção"):
     if valor > 0:
         total = valor + valor_taxa1 + valor_taxa2 + valor_taxa3
@@ -117,14 +104,12 @@ if st.button("🔍 Calcular Valor Total e Projeção"):
     else:
         st.warning("Preencha o valor arrematado corretamente.")
 
-# Histórico
 if st.session_state["historico"]:
     st.markdown("---")
     st.markdown("### 📊 Histórico de Cálculos Realizados")
     df = pd.DataFrame(st.session_state["historico"])
     st.dataframe(df, use_container_width=True)
 
-    # Exportar CSV
     csv = df.to_csv(index=False).encode("utf-8")
     st.download_button(
         label="📄 Exportar Histórico para CSV",
@@ -133,7 +118,6 @@ if st.session_state["historico"]:
         mime="text/csv"
     )
 
-    # Gráfico de rentabilidade
     st.markdown("### 📈 Gráfico de Rentabilidade por Item")
     df["Lucro"] = df["Preço Revenda (R$)"] - df["Total (R$)"]
     fig, ax = plt.subplots(figsize=(10, 6))
