@@ -23,21 +23,22 @@ st.markdown("Preencha os dados abaixo para calcular os encargos sobre o item lei
 nome_item = st.text_input("📝 Nome do Item").strip().lower()
 valor = st.number_input("💰 Valor Arrematado (R$)", min_value=0.0, step=100.0)
 
-# Função para entrada de taxa
-def entrada_taxa(nome_taxa):
-    modo = st.selectbox(f"Modo de {nome_taxa}", ["Percentual (%)", "Valor Fixo (R$)"], key=nome_taxa)
+# Função para entrada de taxa com radio buttons
+def entrada_taxa(nome_taxa, chave):
+    st.markdown(f"**{nome_taxa}**")
+    modo = st.radio("Escolha o tipo", ["Percentual (%)", "Valor Fixo (R$)"], horizontal=True, key=f"modo_{chave}")
     if modo == "Percentual (%)":
-        percentual = st.number_input(f"{nome_taxa} (%)", min_value=0.0, max_value=100.0, value=0.0, step=0.1, key=f"{nome_taxa}_percentual")
+        percentual = st.number_input(f"{nome_taxa} (%)", min_value=0.0, max_value=100.0, value=0.0, step=0.1, key=f"{chave}_percentual")
         return valor * percentual / 100
     else:
-        valor_fixo = st.number_input(f"{nome_taxa} (R$)", min_value=0.0, value=0.0, step=10.0, key=f"{nome_taxa}_fixo")
+        valor_fixo = st.number_input(f"{nome_taxa} (R$)", min_value=0.0, value=0.0, step=10.0, key=f"{chave}_fixo")
         return valor_fixo
 
 # Entradas das taxas
 st.markdown("### 📌 Taxas Adicionais")
-valor_taxa1 = entrada_taxa("Taxa 1")
-valor_taxa2 = entrada_taxa("Taxa 2")
-valor_taxa3 = entrada_taxa("Taxa 3")
+valor_taxa1 = entrada_taxa("Taxa 1", "taxa1")
+valor_taxa2 = entrada_taxa("Taxa 2", "taxa2")
+valor_taxa3 = entrada_taxa("Taxa 3", "taxa3")
 
 # Função para ícone
 def obter_icone(nome):
