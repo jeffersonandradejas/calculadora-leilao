@@ -7,7 +7,10 @@ st.set_page_config(page_title="Calculadora de Leilão", layout="centered")
 
 # Função para formatar moeda no padrão brasileiro
 def formatar_reais(valor):
-    return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    partes = f"{valor:,.2f}".split(".")
+    milhar = partes[0].replace(",", ".")
+    centavos = partes[1]
+    return f"R$ {milhar},{centavos}"
 
 # Ícones por tipo de item
 ICONES = {
