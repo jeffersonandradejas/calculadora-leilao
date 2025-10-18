@@ -1,39 +1,53 @@
 import streamlit as st
 import pandas as pd
+import requests
 
-# Configuração da página
 st.set_page_config(page_title="Calculadora de Leilão", layout="centered")
 
-# Ícones por tipo de item
-ICONES = {
-    "computador": "🖥️", "notebook": "💻", "carro": "🚗", "moto": "🏍️",
-    "bicicleta": "🚲", "impressora": "🖨️", "servidor": "🗄️", "monitor": "🖥️",
-    "celular": "📱", "caminhão": "🚚", "outro": "📦"
-}
-
-# Histórico de cálculos
+# Histórico
 if "historico" not in st.session_state:
     st.session_state["historico"] = []
 
 # Título
 st.markdown("<h1 style='text-align:center;color:#2E8B57;'>🛒 Calculadora de Leilão</h1>", unsafe_allow_html=True)
-st.markdown("Preencha os dados abaixo para calcular os encargos e projeção de revenda:")
 
-# Entradas principais
+# Valor arrematado
 col1, col2 = st.columns(2)
 with col1:
     nome_item = st.text_input("📝 Nome do Item").strip().lower()
 with col2:
     valor = st.number_input("💰 Valor Arrematado (R$)", min_value=0.0, step=100.0)
 
-# Campos de modelo e ano
-col3, col4 = st.columns(2)
-with col3:
-    modelo = st.text_input("🚗 Modelo do Veículo")
-with col4:
-    ano = st.text_input("📅 Ano")
+# Consulta à API da Tabela Fipe
+st.markdown("### 🚗 Dados do Veículo")
 
-# Função para entrada de taxa com radio buttons
+# Marcas
+marcas = requests.get("https://fipe.parallelum.com.br/api/v2/cars/brands").json()
+marca_opcoes = {m["name"]: m["code"] for m in marcas}
+marca_nome = st.selectbox("Marca", list(marca_opcoes.keys()))
+marca_id = marca_opcoes[marca_nome]
+
+# Modelos
+modelos = requests.get(f"https://fipe.parallelum.com.br/api/v2/cars/brands/{marca_id}/models").json()["models"]
+modelo_opcoes = {m["name"]: m["code"] for m in modelos}
+modelo_nome = st.selectbox("Modelo", list(modelo_opcoes.keys()))
+modelo_id = modelo_opcoes[modelo_nome]
+
+# Anos
+anos = requests.get(f"https://fipe.parallelum.com.br/api/v2/cars/brands/{marca_id}/models/{modelo_id}/years").json()
+ano_opcoes = {a["name"]: a["code"] for a in anos}
+ano_nome = st.selectbox("Ano", list(ano_opcoes.keys()))
+ano_id = ano_opcoes[ano_nome]
+
+# Valor Fipe
+valor_fipe = 0.0
+if marca_id and modelo_id and ano_id:
+    fipe_data = requests.get(f"https://fipe.parallelum.com.br/api/v2/cars/brands/{marca_id}/models/{modelo_id}/years/{ano_id}").json()
+    valor_fipe = float(fipe_data["price"].replace("R$ ", "").replace(".", "").replace(",", "."))
+
+st.success(f"📊 Valor Fipe: R$ {valor_fipe:.2f}")
+
+# Função para entrada de taxa
 def entrada_taxa(nome_taxa, chave):
     st.markdown(f"**{nome_taxa}**")
     modo = st.radio("Escolha o tipo", ["Percentual (%)", "Valor Fixo (R$)"], horizontal=True, key=f"modo_{chave}")
@@ -44,17 +58,13 @@ def entrada_taxa(nome_taxa, chave):
         valor_fixo = st.number_input(f"{nome_taxa} (R$)", min_value=0.0, value=0.0, step=10.0, key=f"{chave}_fixo")
         return valor_fixo
 
-# Entradas das taxas
+# Taxas
 st.markdown("### 📌 Taxas Adicionais")
 valor_taxa1 = entrada_taxa("Taxa 1", "taxa1")
 valor_taxa2 = entrada_taxa("Taxa 2", "taxa2")
 valor_taxa3 = entrada_taxa("Taxa 3", "taxa3")
 
-# Entrada de valor Fipe
-st.markdown("### 🚗 Valor de Mercado (Tabela Fipe)")
-valor_fipe = st.number_input("Valor Fipe (R$)", min_value=0.0, step=100.0)
-
-# Entrada de lucro desejado
+# Lucro desejado
 st.markdown("### 📈 Lucro Desejado")
 modo_lucro = st.radio("Tipo de Lucro", ["Percentual (%)", "Valor Fixo (R$)"], horizontal=True)
 if modo_lucro == "Percentual (%)":
@@ -64,25 +74,17 @@ else:
     lucro_fixo = st.number_input("Lucro (R$)", min_value=0.0, value=5000.0)
     preco_revenda = valor + valor_taxa1 + valor_taxa2 + valor_taxa3 + lucro_fixo
 
-# Função para ícone
-def obter_icone(nome):
-    for chave in ICONES:
-        if chave in nome:
-            return ICONES[chave]
-    return ICONES["outro"]
-
-# Cálculo
+# Cálculo final
 if st.button("🔍 Calcular Valor Total e Projeção"):
     if valor > 0:
         total = valor + valor_taxa1 + valor_taxa2 + valor_taxa3
         margem_fipe = valor_fipe - preco_revenda if valor_fipe > 0 else None
-        icone = obter_icone(nome_item)
 
         resultado = {
             "Item": nome_item.title(),
-            "Modelo": modelo,
-            "Ano": ano,
-            "Ícone": icone,
+            "Marca": marca_nome,
+            "Modelo": modelo_nome,
+            "Ano": ano_nome,
             "Valor (R$)": round(valor, 2),
             "Taxa 1 (R$)": round(valor_taxa1, 2),
             "Taxa 2 (R$)": round(valor_taxa2, 2),
@@ -95,17 +97,11 @@ if st.button("🔍 Calcular Valor Total e Projeção"):
 
         st.session_state["historico"].append(resultado)
 
-        st.success(f"{icone} Resultado para **{nome_item.title()}**")
-        st.write(f"📄 Modelo: {modelo}")
-        st.write(f"📅 Ano: {ano}")
-        st.write(f"📄 Taxa 1: R$ {valor_taxa1:.2f}")
-        st.write(f"📄 Taxa 2: R$ {valor_taxa2:.2f}")
-        st.write(f"📄 Taxa 3: R$ {valor_taxa3:.2f}")
+        st.success(f"🔧 Resultado para **{modelo_nome} {ano_nome}**")
         st.write(f"💵 Custo Total: **R$ {total:.2f}**")
         st.write(f"📈 Preço mínimo de revenda: **R$ {preco_revenda:.2f}**")
-        if valor_fipe > 0:
-            st.write(f"📊 Valor Fipe: R$ {valor_fipe:.2f}")
-            st.write(f"📉 Margem sobre Fipe: R$ {margem_fipe:.2f}")
+        st.write(f"📊 Valor Fipe: R$ {valor_fipe:.2f}")
+        st.write(f"📉 Margem sobre Fipe: R$ {margem_fipe:.2f}")
     else:
         st.warning("Preencha o valor arrematado corretamente.")
 
