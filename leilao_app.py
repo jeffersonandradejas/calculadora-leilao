@@ -1,8 +1,13 @@
 import streamlit as st
 import pandas as pd
+import matplotlib.pyplot as plt
 
 # Configuração da página
 st.set_page_config(page_title="Calculadora de Leilão", layout="centered")
+
+# Função para formatar moeda no padrão brasileiro
+def formatar_reais(valor):
+    return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 # Ícones por tipo de item
 ICONES = {
@@ -98,14 +103,14 @@ if st.button("🔍 Calcular Valor Total e Projeção"):
         st.success(f"{icone} Resultado para **{nome_item.title()}**")
         st.write(f"📄 Modelo: {modelo}")
         st.write(f"📅 Ano: {ano}")
-        st.write(f"📄 Taxa 1: R$ {valor_taxa1:.2f}")
-        st.write(f"📄 Taxa 2: R$ {valor_taxa2:.2f}")
-        st.write(f"📄 Taxa 3: R$ {valor_taxa3:.2f}")
-        st.write(f"💵 Custo Total: **R$ {total:.2f}**")
-        st.write(f"📈 Preço mínimo de revenda: **R$ {preco_revenda:.2f}**")
+        st.write(f"📄 Taxa 1: {formatar_reais(valor_taxa1)}")
+        st.write(f"📄 Taxa 2: {formatar_reais(valor_taxa2)}")
+        st.write(f"📄 Taxa 3: {formatar_reais(valor_taxa3)}")
+        st.write(f"💵 Custo Total: **{formatar_reais(total)}**")
+        st.write(f"📈 Preço mínimo de revenda: **{formatar_reais(preco_revenda)}**")
         if valor_fipe > 0:
-            st.write(f"📊 Valor Fipe: R$ {valor_fipe:.2f}")
-            st.write(f"📉 Margem sobre Fipe: R$ {margem_fipe:.2f}")
+            st.write(f"📊 Valor Fipe: {formatar_reais(valor_fipe)}")
+            st.write(f"📉 Margem sobre Fipe: {formatar_reais(margem_fipe)}")
     else:
         st.warning("Preencha o valor arrematado corretamente.")
 
@@ -116,6 +121,7 @@ if st.session_state["historico"]:
     df = pd.DataFrame(st.session_state["historico"])
     st.dataframe(df, use_container_width=True)
 
+    # Exportar CSV
     csv = df.to_csv(index=False).encode("utf-8")
     st.download_button(
         label="📄 Exportar Histórico para CSV",
@@ -123,3 +129,19 @@ if st.session_state["historico"]:
         file_name="calculos_leilao.csv",
         mime="text/csv"
     )
+
+    # Gráfico de rentabilidade
+    st.markdown("### 📈 Gráfico de Rentabilidade por Item")
+    df["Lucro"] = df["Preço Revenda (R$)"] - df["Total (R$)"]
+    fig, ax = plt.subplots(figsize=(10, 6))
+    bars = ax.bar(df["Item"], df["Lucro"], color="#2E8B57")
+    ax.set_title("Rentabilidade por Item", fontsize=16)
+    ax.set_ylabel("Lucro (R$)", fontsize=12)
+    ax.set_xlabel("Item", fontsize=12)
+    ax.grid(axis="y", linestyle="--", alpha=0.7)
+
+    for bar in bars:
+        height = bar.get_height()
+        ax.text(bar.get_x() + bar.get_width()/2, height + 50, formatar_reais(height), ha='center', va='bottom', fontsize=10)
+
+    st.pyplot(fig)
