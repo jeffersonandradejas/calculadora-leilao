@@ -16,12 +16,22 @@ if "historico" not in st.session_state:
     st.session_state["historico"] = []
 
 # Título
-st.markdown("<h1 style='text-align:center;color:#2E8B57;'>🛒 Calculadora de Leilão RFB</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align:center;color:#2E8B57;'>🛒 Calculadora de Leilão</h1>", unsafe_allow_html=True)
 st.markdown("Preencha os dados abaixo para calcular os encargos e projeção de revenda:")
 
 # Entradas principais
-nome_item = st.text_input("📝 Nome do Item").strip().lower()
-valor = st.number_input("💰 Valor Arrematado (R$)", min_value=0.0, step=100.0)
+col1, col2 = st.columns(2)
+with col1:
+    nome_item = st.text_input("📝 Nome do Item").strip().lower()
+with col2:
+    valor = st.number_input("💰 Valor Arrematado (R$)", min_value=0.0, step=100.0)
+
+# Campos de modelo e ano
+col3, col4 = st.columns(2)
+with col3:
+    modelo = st.text_input("🚗 Modelo do Veículo")
+with col4:
+    ano = st.text_input("📅 Ano")
 
 # Função para entrada de taxa com radio buttons
 def entrada_taxa(nome_taxa, chave):
@@ -70,6 +80,8 @@ if st.button("🔍 Calcular Valor Total e Projeção"):
 
         resultado = {
             "Item": nome_item.title(),
+            "Modelo": modelo,
+            "Ano": ano,
             "Ícone": icone,
             "Valor (R$)": round(valor, 2),
             "Taxa 1 (R$)": round(valor_taxa1, 2),
@@ -84,6 +96,8 @@ if st.button("🔍 Calcular Valor Total e Projeção"):
         st.session_state["historico"].append(resultado)
 
         st.success(f"{icone} Resultado para **{nome_item.title()}**")
+        st.write(f"📄 Modelo: {modelo}")
+        st.write(f"📅 Ano: {ano}")
         st.write(f"📄 Taxa 1: R$ {valor_taxa1:.2f}")
         st.write(f"📄 Taxa 2: R$ {valor_taxa2:.2f}")
         st.write(f"📄 Taxa 3: R$ {valor_taxa3:.2f}")
