@@ -4,20 +4,17 @@ import requests
 
 st.set_page_config(page_title="Calculadora de Leilão", layout="centered")
 
-# Histórico
 if "historico" not in st.session_state:
     st.session_state["historico"] = []
 
 st.markdown("<h1 style='text-align:center;color:#2E8B57;'>🛒 Calculadora de Leilão</h1>", unsafe_allow_html=True)
 
-# Valor arrematado
 col1, col2 = st.columns(2)
 with col1:
     nome_item = st.text_input("📝 Nome do Item").strip().lower()
 with col2:
     valor = st.number_input("💰 Valor Arrematado (R$)", min_value=0.0, step=100.0)
 
-# Consulta à API da Tabela Fipe
 st.markdown("### 🚗 Dados do Veículo")
 
 # Marcas
@@ -32,14 +29,24 @@ else:
     st.stop()
 
 # Modelos
+modelos = []
+modelo_opcoes = {}
+modelo_nome = ""
+modelo_id = ""
+
 res_modelos = requests.get(f"https://fipe.parallelum.com.br/api/v2/cars/brands/{marca_id}/models")
-if res_modelos.status_code == 200 and "models" in res_modelos.json():
-    modelos = res_modelos.json()["models"]
-    modelo_opcoes = {m["name"]: m["code"] for m in modelos}
-    modelo_nome = st.selectbox("Modelo", list(modelo_opcoes.keys()))
-    modelo_id = modelo_opcoes[modelo_nome]
+if res_modelos.status_code == 200:
+    data_modelos = res_modelos.json()
+    if "models" in data_modelos and data_modelos["models"]:
+        modelos = data_modelos["models"]
+        modelo_opcoes = {m["name"]: m["code"] for m in modelos}
+        modelo_nome = st.selectbox("Modelo", list(modelo_opcoes.keys()))
+        modelo_id = modelo_opcoes[modelo_nome]
+    else:
+        st.warning("⚠️ Nenhum modelo disponível para esta marca.")
+        st.stop()
 else:
-    st.error("❌ Não foi possível carregar os modelos.")
+    st.error("❌ Erro ao acessar a API de modelos.")
     st.stop()
 
 # Anos
@@ -74,13 +81,11 @@ def entrada_taxa(nome_taxa, chave):
         valor_fixo = st.number_input(f"{nome_taxa} (R$)", min_value=0.0, value=0.0, step=10.0, key=f"{chave}_fixo")
         return valor_fixo
 
-# Taxas
 st.markdown("### 📌 Taxas Adicionais")
 valor_taxa1 = entrada_taxa("Taxa 1", "taxa1")
 valor_taxa2 = entrada_taxa("Taxa 2", "taxa2")
 valor_taxa3 = entrada_taxa("Taxa 3", "taxa3")
 
-# Lucro desejado
 st.markdown("### 📈 Lucro Desejado")
 modo_lucro = st.radio("Tipo de Lucro", ["Percentual (%)", "Valor Fixo (R$)"], horizontal=True)
 if modo_lucro == "Percentual (%)":
@@ -90,7 +95,6 @@ else:
     lucro_fixo = st.number_input("Lucro (R$)", min_value=0.0, value=5000.0)
     preco_revenda = valor + valor_taxa1 + valor_taxa2 + valor_taxa3 + lucro_fixo
 
-# Cálculo final
 if st.button("🔍 Calcular Valor Total e Projeção"):
     if valor > 0:
         total = valor + valor_taxa1 + valor_taxa2 + valor_taxa3
@@ -121,7 +125,6 @@ if st.button("🔍 Calcular Valor Total e Projeção"):
     else:
         st.warning("Preencha o valor arrematado corretamente.")
 
-# Histórico
 if st.session_state["historico"]:
     st.markdown("---")
     st.markdown("### 📊 Histórico de Cálculos Realizados")
