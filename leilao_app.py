@@ -17,7 +17,7 @@ if "historico" not in st.session_state:
 
 # Título
 st.markdown("<h1 style='text-align:center;color:#2E8B57;'>🛒 Calculadora de Leilão RFB</h1>", unsafe_allow_html=True)
-st.markdown("Preencha os dados abaixo para calcular os encargos sobre o item leiloado:")
+st.markdown("Preencha os dados abaixo para calcular os encargos e projeção de revenda:")
 
 # Entradas principais
 nome_item = st.text_input("📝 Nome do Item").strip().lower()
@@ -40,6 +40,20 @@ valor_taxa1 = entrada_taxa("Taxa 1", "taxa1")
 valor_taxa2 = entrada_taxa("Taxa 2", "taxa2")
 valor_taxa3 = entrada_taxa("Taxa 3", "taxa3")
 
+# Entrada de valor Fipe
+st.markdown("### 🚗 Valor de Mercado (Tabela Fipe)")
+valor_fipe = st.number_input("Valor Fipe (R$)", min_value=0.0, step=100.0)
+
+# Entrada de lucro desejado
+st.markdown("### 📈 Lucro Desejado")
+modo_lucro = st.radio("Tipo de Lucro", ["Percentual (%)", "Valor Fixo (R$)"], horizontal=True)
+if modo_lucro == "Percentual (%)":
+    lucro_percentual = st.number_input("Lucro (%)", min_value=0.0, max_value=100.0, value=20.0)
+    preco_revenda = (valor + valor_taxa1 + valor_taxa2 + valor_taxa3) * (1 + lucro_percentual / 100)
+else:
+    lucro_fixo = st.number_input("Lucro (R$)", min_value=0.0, value=5000.0)
+    preco_revenda = valor + valor_taxa1 + valor_taxa2 + valor_taxa3 + lucro_fixo
+
 # Função para ícone
 def obter_icone(nome):
     for chave in ICONES:
@@ -48,9 +62,10 @@ def obter_icone(nome):
     return ICONES["outro"]
 
 # Cálculo
-if st.button("🔍 Calcular Valor Total"):
+if st.button("🔍 Calcular Valor Total e Projeção"):
     if valor > 0:
         total = valor + valor_taxa1 + valor_taxa2 + valor_taxa3
+        margem_fipe = valor_fipe - preco_revenda if valor_fipe > 0 else None
         icone = obter_icone(nome_item)
 
         resultado = {
@@ -60,7 +75,10 @@ if st.button("🔍 Calcular Valor Total"):
             "Taxa 1 (R$)": round(valor_taxa1, 2),
             "Taxa 2 (R$)": round(valor_taxa2, 2),
             "Taxa 3 (R$)": round(valor_taxa3, 2),
-            "Total (R$)": round(total, 2)
+            "Total (R$)": round(total, 2),
+            "Preço Revenda (R$)": round(preco_revenda, 2),
+            "Valor Fipe (R$)": round(valor_fipe, 2),
+            "Margem Fipe (R$)": round(margem_fipe, 2) if margem_fipe is not None else "N/A"
         }
 
         st.session_state["historico"].append(resultado)
@@ -69,7 +87,11 @@ if st.button("🔍 Calcular Valor Total"):
         st.write(f"📄 Taxa 1: R$ {valor_taxa1:.2f}")
         st.write(f"📄 Taxa 2: R$ {valor_taxa2:.2f}")
         st.write(f"📄 Taxa 3: R$ {valor_taxa3:.2f}")
-        st.write(f"💵 Valor Total: **R$ {total:.2f}**")
+        st.write(f"💵 Custo Total: **R$ {total:.2f}**")
+        st.write(f"📈 Preço mínimo de revenda: **R$ {preco_revenda:.2f}**")
+        if valor_fipe > 0:
+            st.write(f"📊 Valor Fipe: R$ {valor_fipe:.2f}")
+            st.write(f"📉 Margem sobre Fipe: R$ {margem_fipe:.2f}")
     else:
         st.warning("Preencha o valor arrematado corretamente.")
 
