@@ -19,11 +19,25 @@ if "historico" not in st.session_state:
 st.markdown("<h1 style='text-align:center;color:#2E8B57;'>🛒 Calculadora de Leilão RFB</h1>", unsafe_allow_html=True)
 st.markdown("Preencha os dados abaixo para calcular os encargos sobre o item leiloado:")
 
-# Entradas
+# Entradas principais
 nome_item = st.text_input("📝 Nome do Item").strip().lower()
 valor = st.number_input("💰 Valor Arrematado (R$)", min_value=0.0, step=100.0)
-aliquota_icms = st.number_input("📄 Alíquota ICMS (%)", min_value=0.0, max_value=100.0, value=18.0)
-taxa_arm = st.number_input("🏬 Taxa de Armazenagem (%)", min_value=0.0, max_value=100.0, value=5.0, step=0.1)
+
+# Função para entrada de taxa
+def entrada_taxa(nome_taxa):
+    modo = st.selectbox(f"Modo de {nome_taxa}", ["Percentual (%)", "Valor Fixo (R$)"], key=nome_taxa)
+    if modo == "Percentual (%)":
+        percentual = st.number_input(f"{nome_taxa} (%)", min_value=0.0, max_value=100.0, value=0.0, step=0.1, key=f"{nome_taxa}_percentual")
+        return valor * percentual / 100
+    else:
+        valor_fixo = st.number_input(f"{nome_taxa} (R$)", min_value=0.0, value=0.0, step=10.0, key=f"{nome_taxa}_fixo")
+        return valor_fixo
+
+# Entradas das taxas
+st.markdown("### 📌 Taxas Adicionais")
+valor_taxa1 = entrada_taxa("Taxa 1")
+valor_taxa2 = entrada_taxa("Taxa 2")
+valor_taxa3 = entrada_taxa("Taxa 3")
 
 # Função para ícone
 def obter_icone(nome):
@@ -34,29 +48,29 @@ def obter_icone(nome):
 
 # Cálculo
 if st.button("🔍 Calcular Valor Total"):
-    if valor > 0 and aliquota_icms > 0 and taxa_arm > 0:
-        icms = valor * aliquota_icms / 100
-        taxa_armazenagem = valor * taxa_arm / 100
-        total = valor + icms + taxa_armazenagem
+    if valor > 0:
+        total = valor + valor_taxa1 + valor_taxa2 + valor_taxa3
         icone = obter_icone(nome_item)
 
         resultado = {
             "Item": nome_item.title(),
             "Ícone": icone,
             "Valor (R$)": round(valor, 2),
-            "ICMS (R$)": round(icms, 2),
-            "Armazenagem (R$)": round(taxa_armazenagem, 2),
+            "Taxa 1 (R$)": round(valor_taxa1, 2),
+            "Taxa 2 (R$)": round(valor_taxa2, 2),
+            "Taxa 3 (R$)": round(valor_taxa3, 2),
             "Total (R$)": round(total, 2)
         }
 
         st.session_state["historico"].append(resultado)
 
         st.success(f"{icone} Resultado para **{nome_item.title()}**")
-        st.write(f"📄 ICMS: R$ {icms:.2f}")
-        st.write(f"🏬 Armazenagem: R$ {taxa_armazenagem:.2f}")
+        st.write(f"📄 Taxa 1: R$ {valor_taxa1:.2f}")
+        st.write(f"📄 Taxa 2: R$ {valor_taxa2:.2f}")
+        st.write(f"📄 Taxa 3: R$ {valor_taxa3:.2f}")
         st.write(f"💵 Valor Total: **R$ {total:.2f}**")
     else:
-        st.warning("Preencha todos os campos corretamente.")
+        st.warning("Preencha o valor arrematado corretamente.")
 
 # Histórico
 if st.session_state["historico"]:
