@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 
 st.set_page_config(page_title="Calculadora de Leilão", layout="centered")
 
-# ✅ Função corrigida para formato brasileiro
 def formatar_reais(valor):
     valor_str = f"{valor:,.2f}"
     valor_str = valor_str.replace(",", "X").replace(".", ",").replace("X", ".")
@@ -85,7 +84,7 @@ if st.button("🔍 Calcular Valor Total e Projeção"):
             "Total (R$)": round(total, 2),
             "Preço Revenda (R$)": round(preco_revenda, 2),
             "Valor Fipe (R$)": round(valor_fipe, 2),
-            "Margem Fipe (R$)": round(margem_fipe, 2) if margem_fipe is not None else "N/A"
+            "Margem Fipe (R$)": round(margem_fipe, 2) if margem_fipe is not None else None
         }
 
         st.session_state["historico"].append(resultado)
@@ -108,6 +107,16 @@ if st.session_state["historico"]:
     st.markdown("---")
     st.markdown("### 📊 Histórico de Cálculos Realizados")
     df = pd.DataFrame(st.session_state["historico"])
+
+    # ✅ Correção do erro 2: garantir que todos os dados sejam strings válidas
+    df = df.astype(str)
+
+    # ✅ Correção do erro 3: filtrar linhas com valores válidos para cálculo de lucro
+    df_filtrado = df[df["Preço Revenda (R$)"].str.replace(",", "").str.replace(".", "").str.isnumeric()]
+    df_filtrado["Preço Revenda (R$)"] = df_filtrado["Preço Revenda (R$)"].astype(float)
+    df_filtrado["Total (R$)"] = df_filtrado["Total (R$)"].astype(float)
+    df_filtrado["Lucro"] = df_filtrado["Preço Revenda (R$)"] - df_filtrado["Total (R$)"]
+
     st.dataframe(df, use_container_width=True)
 
     csv = df.to_csv(index=False).encode("utf-8")
@@ -119,16 +128,6 @@ if st.session_state["historico"]:
     )
 
     st.markdown("### 📈 Gráfico de Rentabilidade por Item")
-    df["Lucro"] = df["Preço Revenda (R$)"] - df["Total (R$)"]
     fig, ax = plt.subplots(figsize=(10, 6))
-    bars = ax.bar(df["Item"], df["Lucro"], color="#2E8B57")
-    ax.set_title("Rentabilidade por Item", fontsize=16)
-    ax.set_ylabel("Lucro (R$)", fontsize=12)
-    ax.set_xlabel("Item", fontsize=12)
-    ax.grid(axis="y", linestyle="--", alpha=0.7)
-
-    for bar in bars:
-        height = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width()/2, height + 50, formatar_reais(height), ha='center', va='bottom', fontsize=10)
-
-    st.pyplot(fig)
+    bars = ax.bar(df_filtrado["Item"], df_filtrado["Lucro"], color="#2E8B57")
+    ax.set_title("Rentabilidade por
