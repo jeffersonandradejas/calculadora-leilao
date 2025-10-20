@@ -9,12 +9,6 @@ def formatar_reais(valor):
     valor_str = valor_str.replace(",", "X").replace(".", ",").replace("X", ".")
     return f"R$ {valor_str}"
 
-ICONES = {
-    "computador": "🖥️", "notebook": "💻", "carro": "🚗", "moto": "🏍️",
-    "bicicleta": "🚲", "impressora": "🖨️", "servidor": "🗄️", "monitor": "🖥️",
-    "celular": "📱", "caminhão": "🚚", "outro": "📦"
-}
-
 if "historico" not in st.session_state:
     st.session_state["historico"] = []
 
@@ -23,13 +17,13 @@ st.markdown("Preencha os dados abaixo para calcular os encargos e projeção de 
 
 col1, col2 = st.columns(2)
 with col1:
-    nome_item = st.text_input("📝 Nome do Item").strip().lower()
+    nome_item = st.text_input("📝 Nome do Bem").strip().lower()
 with col2:
     valor = st.number_input("💰 Valor Arrematado (R$)", min_value=0.0, step=100.0)
 
 col3, col4 = st.columns(2)
 with col3:
-    modelo = st.text_input("🚗 Modelo do Veículo")
+    modelo = st.text_input("📦 Modelo")
 with col4:
     ano = st.text_input("📅 Ano")
 
@@ -48,9 +42,6 @@ valor_taxa1 = entrada_taxa("Taxa 1", "taxa1")
 valor_taxa2 = entrada_taxa("Taxa 2", "taxa2")
 valor_taxa3 = entrada_taxa("Taxa 3", "taxa3")
 
-st.markdown("### 🚗 Valor de Mercado (Tabela Fipe)")
-valor_fipe = st.number_input("Valor Fipe (R$)", min_value=0.0, step=100.0)
-
 st.markdown("### 📈 Lucro Desejado")
 modo_lucro = st.radio("Tipo de Lucro", ["Percentual (%)", "Valor Fixo (R$)"], horizontal=True)
 if modo_lucro == "Percentual (%)":
@@ -60,23 +51,19 @@ else:
     lucro_fixo = st.number_input("Lucro (R$)", min_value=0.0, value=5000.0)
     preco_revenda = valor + valor_taxa1 + valor_taxa2 + valor_taxa3 + lucro_fixo
 
-def obter_icone(nome):
-    for chave in ICONES:
-        if chave in nome:
-            return ICONES[chave]
-    return ICONES["outro"]
+st.markdown("### 📊 Valor de Mercado (Tabela Fipe)")
+valor_fipe = st.number_input("Valor Fipe (R$)", min_value=0.0, step=100.0)
 
 if st.button("🔍 Calcular Valor Total e Projeção"):
     if valor > 0:
         total = valor + valor_taxa1 + valor_taxa2 + valor_taxa3
         margem_fipe = valor_fipe - preco_revenda if valor_fipe > 0 else None
-        icone = obter_icone(nome_item)
 
         resultado = {
             "Item": nome_item.title(),
             "Modelo": modelo,
             "Ano": ano,
-            "Ícone": icone,
+            "Ícone": "📦",
             "Valor (R$)": round(valor, 2),
             "Taxa 1 (R$)": round(valor_taxa1, 2),
             "Taxa 2 (R$)": round(valor_taxa2, 2),
@@ -89,7 +76,7 @@ if st.button("🔍 Calcular Valor Total e Projeção"):
 
         st.session_state["historico"].append(resultado)
 
-        st.success(f"{icone} Resultado para **{nome_item.title()}**")
+        st.success(f"📦 Resultado para **{nome_item.title()}**")
         st.write(f"📄 Modelo: {modelo}")
         st.write(f"📅 Ano: {ano}")
         st.write(f"📄 Taxa 1: {formatar_reais(valor_taxa1)}")
@@ -119,7 +106,7 @@ if st.session_state["historico"]:
         mime="text/csv"
     )
 
-    # 🔍 Gráfico de Rentabilidade por Item
+    # Gráfico por Modelo
     df_grafico = df.copy()
     df_grafico = df_grafico[df_grafico["Preço Revenda (R$)"].str.replace(",", "").str.replace(".", "").str.isnumeric()]
     df_grafico["Preço Revenda (R$)"] = df_grafico["Preço Revenda (R$)"].astype(float)
@@ -127,12 +114,12 @@ if st.session_state["historico"]:
     df_grafico["Lucro"] = df_grafico["Preço Revenda (R$)"] - df_grafico["Total (R$)"]
 
     if not df_grafico.empty:
-        st.markdown("### 📈 Gráfico de Rentabilidade por Item")
+        st.markdown("### 📈 Gráfico de Rentabilidade por Modelo")
         fig, ax = plt.subplots(figsize=(10, 6))
-        bars = ax.bar(df_grafico["Item"], df_grafico["Lucro"], color="#2E8B57")
-        ax.set_title("Rentabilidade por Item", fontsize=16)
+        bars = ax.bar(df_grafico["Modelo"], df_grafico["Lucro"], color="#2E8B57")
+        ax.set_title("Rentabilidade por Modelo", fontsize=16)
         ax.set_ylabel("Lucro (R$)", fontsize=12)
-        ax.set_xlabel("Item", fontsize=12)
+        ax.set_xlabel("Modelo", fontsize=12)
         ax.grid(axis="y", linestyle="--", alpha=0.7)
 
         for bar in bars:
