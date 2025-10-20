@@ -107,15 +107,7 @@ if st.session_state["historico"]:
     st.markdown("---")
     st.markdown("### 📊 Histórico de Cálculos Realizados")
     df = pd.DataFrame(st.session_state["historico"])
-
-    # ✅ Correção do erro 2: garantir que todos os dados sejam strings válidas
     df = df.astype(str)
-
-    # ✅ Correção do erro 3: filtrar linhas com valores válidos para cálculo de lucro
-    df_filtrado = df[df["Preço Revenda (R$)"].str.replace(",", "").str.replace(".", "").str.isnumeric()]
-    df_filtrado["Preço Revenda (R$)"] = df_filtrado["Preço Revenda (R$)"].astype(float)
-    df_filtrado["Total (R$)"] = df_filtrado["Total (R$)"].astype(float)
-    df_filtrado["Lucro"] = df_filtrado["Preço Revenda (R$)"] - df_filtrado["Total (R$)"]
 
     st.dataframe(df, use_container_width=True)
 
@@ -127,7 +119,26 @@ if st.session_state["historico"]:
         mime="text/csv"
     )
 
-    st.markdown("### 📈 Gráfico de Rentabilidade por Item")
-    fig, ax = plt.subplots(figsize=(10, 6))
-    bars = ax.bar(df_filtrado["Item"], df_filtrado["Lucro"], color="#2E8B57")
-    ax.set_title("Rentabilidade por
+    # 🔍 Gráfico de Rentabilidade por Item
+    df_grafico = df.copy()
+    df_grafico = df_grafico[df_grafico["Preço Revenda (R$)"].str.replace(",", "").str.replace(".", "").str.isnumeric()]
+    df_grafico["Preço Revenda (R$)"] = df_grafico["Preço Revenda (R$)"].astype(float)
+    df_grafico["Total (R$)"] = df_grafico["Total (R$)"].astype(float)
+    df_grafico["Lucro"] = df_grafico["Preço Revenda (R$)"] - df_grafico["Total (R$)"]
+
+    if not df_grafico.empty:
+        st.markdown("### 📈 Gráfico de Rentabilidade por Item")
+        fig, ax = plt.subplots(figsize=(10, 6))
+        bars = ax.bar(df_grafico["Item"], df_grafico["Lucro"], color="#2E8B57")
+        ax.set_title("Rentabilidade por Item", fontsize=16)
+        ax.set_ylabel("Lucro (R$)", fontsize=12)
+        ax.set_xlabel("Item", fontsize=12)
+        ax.grid(axis="y", linestyle="--", alpha=0.7)
+
+        for bar in bars:
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width()/2, height + 50, formatar_reais(height), ha='center', va='bottom', fontsize=10)
+
+        st.pyplot(fig)
+    else:
+        st.info("Ainda não há dados suficientes para gerar o gráfico de rentabilidade.")
