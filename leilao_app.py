@@ -2,19 +2,24 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 
+# Configuração da página
 st.set_page_config(page_title="Calculadora de Leilão", layout="centered")
 
+# Função para formatar valores em reais
 def formatar_reais(valor):
     valor_str = f"{valor:,.2f}"
     valor_str = valor_str.replace(",", "X").replace(".", ",").replace("X", ".")
     return f"R$ {valor_str}"
 
+# Inicialização do histórico
 if "historico" not in st.session_state:
     st.session_state["historico"] = []
 
+# Cabeçalho e introdução
 st.markdown("<h1 style='text-align:center;color:#2E8B57;'>🛒 Calculadora de Leilão</h1>", unsafe_allow_html=True)
 st.markdown("Preencha os dados abaixo para calcular os encargos e projeção de revenda:")
 
+# Entradas principais
 col1, col2 = st.columns(2)
 with col1:
     nome_item = st.text_input("📝 Nome do Bem").strip().lower()
@@ -27,6 +32,7 @@ with col3:
 with col4:
     ano = st.text_input("📅 Ano")
 
+# Função para entrada de taxas
 def entrada_taxa(nome_taxa, chave):
     st.markdown(f"**{nome_taxa}**")
     modo = st.radio("Escolha o tipo", ["Percentual (%)", "Valor Fixo (R$)"], horizontal=True, key=f"modo_{chave}")
@@ -37,6 +43,7 @@ def entrada_taxa(nome_taxa, chave):
         valor_fixo = st.number_input(f"{nome_taxa} (R$)", min_value=0.0, value=0.0, step=10.0, key=f"{chave}_fixo")
         return valor_fixo
 
+# Taxas adicionais
 st.markdown("### 📌 Taxas Adicionais")
 col_taxas1, col_taxas2 = st.columns(2)
 with col_taxas1:
@@ -46,6 +53,7 @@ with col_taxas2:
     valor_taxa2 = entrada_taxa("Taxa 2", "taxa2")
     valor_taxa4 = entrada_taxa("Taxa 4", "taxa4")
 
+# Lucro desejado
 st.markdown("### 📈 Lucro Desejado")
 modo_lucro = st.radio("Tipo de Lucro", ["Percentual (%)", "Valor Fixo (R$)"], horizontal=True)
 if modo_lucro == "Percentual (%)":
@@ -55,6 +63,7 @@ else:
     lucro_fixo = st.number_input("Lucro (R$)", min_value=0.0, value=5000.0)
     preco_revenda = valor + valor_taxa1 + valor_taxa2 + valor_taxa3 + valor_taxa4 + lucro_fixo
 
+# Valores de mercado
 st.markdown("### 📊 Valores de Mercado")
 col_valores1, col_valores2 = st.columns(2)
 with col_valores1:
@@ -62,6 +71,7 @@ with col_valores1:
 with col_valores2:
     valor_mercado_alt = st.number_input("Valor de Mercado Alternativo (R$)", min_value=0.0, step=100.0)
 
+# Cálculo final
 if st.button("🔍 Calcular Valor Total e Projeção"):
     if valor > 0:
         total = valor + valor_taxa1 + valor_taxa2 + valor_taxa3 + valor_taxa4
@@ -106,6 +116,7 @@ if st.button("🔍 Calcular Valor Total e Projeção"):
     else:
         st.warning("Preencha o valor arrematado corretamente.")
 
+# Exibição do histórico
 if st.session_state["historico"]:
     st.markdown("---")
     st.markdown("### 📊 Histórico de Cálculos Realizados")
@@ -122,7 +133,7 @@ if st.session_state["historico"]:
         mime="text/csv"
     )
 
-    # Gráfico por Modelo
+    # Gráfico de rentabilidade
     df_grafico = df.copy()
     df_grafico = df_grafico[df_grafico["Preço Revenda (R$)"].str.replace(",", "").str.replace(".", "").str.isnumeric()]
     df_grafico["Preço Revenda (R$)"] = df_grafico["Preço Revenda (R$)"].astype(float)
@@ -140,4 +151,14 @@ if st.session_state["historico"]:
 
         for bar in bars:
             height = bar.get_height()
-            ax.text(bar.get_x()
+            ax.text(
+                bar.get_x() + bar.get_width() / 2,
+                height,
+                f"{height:,.2f}",
+                ha='center',
+                va='bottom',
+                fontsize=10,
+                color='black'
+            )
+
+        st.pyplot(fig)
