@@ -140,4 +140,4 @@ if st.session_state["historico"]:
 
         for bar in bars:
             height = bar.get_height()
-            ax.text(bar.get_x() + bar.get_width()/2, height + 50, formatar_reais(height), ha='center', va='
+            ax.text(bar.get_x()
