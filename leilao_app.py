@@ -38,26 +38,35 @@ def entrada_taxa(nome_taxa, chave):
         return valor_fixo
 
 st.markdown("### 📌 Taxas Adicionais")
-valor_taxa1 = entrada_taxa("Taxa 1", "taxa1")
-valor_taxa2 = entrada_taxa("Taxa 2", "taxa2")
-valor_taxa3 = entrada_taxa("Taxa 3", "taxa3")
+col_taxas1, col_taxas2 = st.columns(2)
+with col_taxas1:
+    valor_taxa1 = entrada_taxa("Taxa 1", "taxa1")
+    valor_taxa3 = entrada_taxa("Taxa 3", "taxa3")
+with col_taxas2:
+    valor_taxa2 = entrada_taxa("Taxa 2", "taxa2")
+    valor_taxa4 = entrada_taxa("Taxa 4", "taxa4")
 
 st.markdown("### 📈 Lucro Desejado")
 modo_lucro = st.radio("Tipo de Lucro", ["Percentual (%)", "Valor Fixo (R$)"], horizontal=True)
 if modo_lucro == "Percentual (%)":
     lucro_percentual = st.number_input("Lucro (%)", min_value=0.0, max_value=100.0, value=20.0)
-    preco_revenda = (valor + valor_taxa1 + valor_taxa2 + valor_taxa3) * (1 + lucro_percentual / 100)
+    preco_revenda = (valor + valor_taxa1 + valor_taxa2 + valor_taxa3 + valor_taxa4) * (1 + lucro_percentual / 100)
 else:
     lucro_fixo = st.number_input("Lucro (R$)", min_value=0.0, value=5000.0)
-    preco_revenda = valor + valor_taxa1 + valor_taxa2 + valor_taxa3 + lucro_fixo
+    preco_revenda = valor + valor_taxa1 + valor_taxa2 + valor_taxa3 + valor_taxa4 + lucro_fixo
 
-st.markdown("### 📊 Valor de Mercado (Tabela Fipe)")
-valor_fipe = st.number_input("Valor Fipe (R$)", min_value=0.0, step=100.0)
+st.markdown("### 📊 Valores de Mercado")
+col_valores1, col_valores2 = st.columns(2)
+with col_valores1:
+    valor_fipe = st.number_input("Valor Fipe (R$)", min_value=0.0, step=100.0)
+with col_valores2:
+    valor_mercado_alt = st.number_input("Valor de Mercado Alternativo (R$)", min_value=0.0, step=100.0)
 
 if st.button("🔍 Calcular Valor Total e Projeção"):
     if valor > 0:
-        total = valor + valor_taxa1 + valor_taxa2 + valor_taxa3
+        total = valor + valor_taxa1 + valor_taxa2 + valor_taxa3 + valor_taxa4
         margem_fipe = valor_fipe - preco_revenda if valor_fipe > 0 else None
+        margem_mercado_alt = valor_mercado_alt - preco_revenda if valor_mercado_alt > 0 else None
 
         resultado = {
             "Item": nome_item.title(),
@@ -68,10 +77,13 @@ if st.button("🔍 Calcular Valor Total e Projeção"):
             "Taxa 1 (R$)": round(valor_taxa1, 2),
             "Taxa 2 (R$)": round(valor_taxa2, 2),
             "Taxa 3 (R$)": round(valor_taxa3, 2),
+            "Taxa 4 (R$)": round(valor_taxa4, 2),
             "Total (R$)": round(total, 2),
             "Preço Revenda (R$)": round(preco_revenda, 2),
             "Valor Fipe (R$)": round(valor_fipe, 2),
-            "Margem Fipe (R$)": round(margem_fipe, 2) if margem_fipe is not None else None
+            "Valor Mercado Alternativo (R$)": round(valor_mercado_alt, 2),
+            "Margem Fipe (R$)": round(margem_fipe, 2) if margem_fipe is not None else None,
+            "Margem Mercado Alternativo (R$)": round(margem_mercado_alt, 2) if margem_mercado_alt is not None else None
         }
 
         st.session_state["historico"].append(resultado)
@@ -82,11 +94,15 @@ if st.button("🔍 Calcular Valor Total e Projeção"):
         st.write(f"📄 Taxa 1: {formatar_reais(valor_taxa1)}")
         st.write(f"📄 Taxa 2: {formatar_reais(valor_taxa2)}")
         st.write(f"📄 Taxa 3: {formatar_reais(valor_taxa3)}")
+        st.write(f"📄 Taxa 4: {formatar_reais(valor_taxa4)}")
         st.write(f"💵 Custo Total: **{formatar_reais(total)}**")
         st.write(f"📈 Preço mínimo de revenda: **{formatar_reais(preco_revenda)}**")
         if valor_fipe > 0:
             st.write(f"📊 Valor Fipe: {formatar_reais(valor_fipe)}")
             st.write(f"📉 Margem sobre Fipe: {formatar_reais(margem_fipe)}")
+        if valor_mercado_alt > 0:
+            st.write(f"🧾 Valor Mercado Alternativo: {formatar_reais(valor_mercado_alt)}")
+            st.write(f"📉 Margem sobre Mercado Alternativo: {formatar_reais(margem_mercado_alt)}")
     else:
         st.warning("Preencha o valor arrematado corretamente.")
 
@@ -124,8 +140,4 @@ if st.session_state["historico"]:
 
         for bar in bars:
             height = bar.get_height()
-            ax.text(bar.get_x() + bar.get_width()/2, height + 50, formatar_reais(height), ha='center', va='bottom', fontsize=10)
-
-        st.pyplot(fig)
-    else:
-        st.info("Ainda não há dados suficientes para gerar o gráfico de rentabilidade.")
+            ax.text(bar.get_x() + bar.get_width()/2, height + 50,
